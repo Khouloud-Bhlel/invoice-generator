@@ -40,16 +40,6 @@ A modern web application built with Next.js, TypeScript, and Shadcn UI that allo
 - **pdf-lib** - Library for creating and modifying PDF documents
 - Custom PDF layout engine with multi-line text support
 
-## Screenshots
-
-### Form Interface
-![Form Interface](https://via.placeholder.com/800x450/f3f4f6/000000?text=Form+Interface)
-
-### Invoice Preview
-![Invoice Preview](https://via.placeholder.com/800x450/f3f4f6/000000?text=Invoice+Preview)
-
-### Generated PDF
-![Generated PDF](https://via.placeholder.com/800x450/f3f4f6/000000?text=Generated+PDF)
 
 ## Getting Started
 
@@ -61,7 +51,7 @@ A modern web application built with Next.js, TypeScript, and Shadcn UI that allo
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/your-username/invoice-generator.git
+git clone https://github.com/Khouloud-Bhlel/invoice-generator.git
 cd invoice-generator
 ```
 
