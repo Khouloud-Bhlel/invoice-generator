@@ -47,6 +47,7 @@
     "build": "npm run build:lib && npm run build:demo",
     "build:lib": "rollup -c",
     "build:demo": "next build",
+    "sync": "powershell Copy-Item -Recurse src/lib . -Force && powershell Copy-Item src/components/ui/label.tsx components/ui/ -Force",
     "start": "next start",
     "lint": "next lint",
     "prepublishOnly": "npm run build:lib"
