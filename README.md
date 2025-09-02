@@ -1,32 +1,72 @@
 # Invoice Generator
 
-A modern web application built with Next.js, TypeScript, and Shadcn UI that allows users to create, preview, and download professional invoices as PDFs.
+A modern React component library for generating professional invoices with PDF export functionality. Built with TypeScript, React Hook Form, and Shadcn UI components.
 
+## 🚀 Installation
 
-## Features
+```bash
+npm install @khouloud-bhlel/invoice-generator
+```
 
-### Dynamic Invoice Creation
-- Add client and company details
+## 📦 Quick Start
+
+```jsx
+import React from 'react';
+import { InvoiceGenerator } from '@khouloud-bhlel/invoice-generator';
+import '@khouloud-bhlel/invoice-generator/styles';
+
+function App() {
+  const handlePDFGenerated = (blob) => {
+    // Handle the generated PDF blob
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'invoice.pdf';
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleError = (error) => {
+    console.error('Error generating PDF:', error);
+  };
+
+  return (
+    <InvoiceGenerator
+      onPDFGenerated={handlePDFGenerated}
+      onError={handleError}
+    />
+  );
+}
+
+export default App;
+```
+
+## ✨ Features
+
+### 🧾 Dynamic Invoice Creation
+- Add client and company details with full contact information
 - Add multiple invoice items with descriptions, quantities, and prices
-- Automatically calculate subtotal, tax, and grand total
+- Automatically calculate subtotal and grand total
 
-### Real-Time Preview
+### 👀 Real-Time Preview
 - Preview the invoice as you fill out the form
 - See exactly how your invoice will look before generating the PDF
 
-### PDF Generation
+### 📄 PDF Generation
 - Download beautifully formatted invoices as PDFs with a single click
 - Professional styling with custom fonts, colors, and layout
+- Built with pdf-lib for reliable PDF generation
 
-### User-Friendly Interface
-- Clean, intuitive form layout
+### 🎨 User-Friendly Interface
+- Clean, intuitive form layout built with Shadcn UI
 - Add and remove invoice items dynamically
 - Responsive design works on desktop and mobile devices
+- TypeScript support out of the box
 
-## Technologies Used
+## 🛠 Technologies Used
 
-### Frontend
-- **Next.js** - React framework for server-rendered applications
+### Core
+- **React** - Component-based UI library
 - **TypeScript** - Type-safe JavaScript
 - **Shadcn UI** - Beautiful and customizable UI components
 - **Tailwind CSS** - Utility-first CSS framework
