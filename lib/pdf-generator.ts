@@ -9,104 +9,89 @@ export async function generatePDF(data: InvoiceFormData) {
     const pdfDoc = await PDFDocument.create();
     const helveticaFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
     const helveticaBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
-    const timesRomanFont = await pdfDoc.embedFont(StandardFonts.TimesRoman);
-    const timesRomanBold = await pdfDoc.embedFont(StandardFonts.TimesRomanBold);
-    const timesRomanItalic = await pdfDoc.embedFont(StandardFonts.TimesRomanItalic);
 
     // Create A4 page
     const page = pdfDoc.addPage([595.28, 841.89]); // A4 size
     const { width, height } = page.getSize();
 
     // Define colors
-    const primaryColor = rgb(0.2, 0.4, 0.6); // Deep blue
-    const accentColor = rgb(0.8, 0.3, 0.3); // Red accent
-    const lightGray = rgb(0.95, 0.95, 0.95); // Light gray for backgrounds
-    const darkGray = rgb(0.3, 0.3, 0.3); // Dark gray for text
-    const mediumGray = rgb(0.6, 0.6, 0.6); // Medium gray for secondary text
+    const black = rgb(0, 0, 0);
+    const white = rgb(1, 1, 1);
+    const lightGray = rgb(0.95, 0.95, 0.95);
+    const mediumGray = rgb(0.8, 0.8, 0.8);
+    const darkGray = rgb(0.4, 0.4, 0.4);
 
-    // Helper functions for drawing
+    // Margins
+    const margin = 50;
+    const contentWidth = width - (margin * 2);
+
+    // Helper functions
     const drawText = (
       text: string,
       x: number,
       y: number,
-      {
-        size = 10,
-        font = "helvetica",
-        color = darkGray,
-        align = "left",
-        lineHeight = 1.2,
-        maxWidth = 0,
+      options: {
+        size?: number;
+        font?: "normal" | "bold";
+        color?: any;
+        align?: "left" | "center" | "right";
+        maxWidth?: number;
       } = {}
     ) => {
-      let fontToUse = helveticaFont;
-      switch (font) {
-        case "helvetica-bold":
-          fontToUse = helveticaBold;
-          break;
-        case "times":
-          fontToUse = timesRomanFont;
-          break;
-        case "times-bold":
-          fontToUse = timesRomanBold;
-          break;
-        case "times-italic":
-          fontToUse = timesRomanItalic;
-          break;
+      const {
+        size = 10,
+        font = "normal",
+        color = black,
+        align = "left",
+        maxWidth = 0
+      } = options;
+
+      const fontToUse = font === "bold" ? helveticaBold : helveticaFont;
+      
+      let xPos = x;
+      const textWidth = fontToUse.widthOfTextAtSize(text, size);
+      
+      if (align === "center") {
+        xPos = x - textWidth / 2;
+      } else if (align === "right") {
+        xPos = x - textWidth;
       }
 
-      // Handle multi-line text if maxWidth is specified
-      if (maxWidth > 0) {
+      if (maxWidth > 0 && textWidth > maxWidth) {
         const words = text.split(" ");
         let line = "";
-        let currentY = y;
+        let lineY = y;
 
         for (const word of words) {
           const testLine = line + (line ? " " : "") + word;
           const testWidth = fontToUse.widthOfTextAtSize(testLine, size);
 
           if (testWidth > maxWidth && line !== "") {
-            // Draw current line and move to next line
-            let xPos = x;
-            if (align === "center") xPos = x - fontToUse.widthOfTextAtSize(line, size) / 2;
-            else if (align === "right") xPos = x - fontToUse.widthOfTextAtSize(line, size);
-
             page.drawText(line, {
-              x: xPos,
-              y: height - currentY,
+              x: align === "right" ? xPos - fontToUse.widthOfTextAtSize(line, size) + maxWidth : xPos,
+              y: height - lineY,
               size,
               font: fontToUse,
               color,
             });
-
             line = word;
-            currentY += size * lineHeight;
+            lineY += size * 1.4;
           } else {
             line = testLine;
           }
         }
 
-        // Draw the last line
         if (line) {
-          let xPos = x;
-          if (align === "center") xPos = x - fontToUse.widthOfTextAtSize(line, size) / 2;
-          else if (align === "right") xPos = x - fontToUse.widthOfTextAtSize(line, size);
-
           page.drawText(line, {
-            x: xPos,
-            y: height - currentY,
+            x: align === "right" ? xPos - fontToUse.widthOfTextAtSize(line, size) + maxWidth : xPos,
+            y: height - lineY,
             size,
             font: fontToUse,
             color,
           });
         }
-
-        return currentY - y + size; // Return total height used
+        return lineY + size * 1.4; // Return the final Y position
       } else {
-        // Single line text
-        let xPos = x;
-        if (align === "center") xPos = x - fontToUse.widthOfTextAtSize(text, size) / 2;
-        else if (align === "right") xPos = x - fontToUse.widthOfTextAtSize(text, size);
-
         page.drawText(text, {
           x: xPos,
           y: height - y,
@@ -114,11 +99,11 @@ export async function generatePDF(data: InvoiceFormData) {
           font: fontToUse,
           color,
         });
-        return size;
+        return y + size * 1.4;
       }
     };
 
-    const drawRect = (x: number, y: number, w: number, h: number, color = lightGray) => {
+    const drawRect = (x: number, y: number, w: number, h: number, color: any) => {
       page.drawRectangle({
         x,
         y: height - y - h,
@@ -128,289 +113,332 @@ export async function generatePDF(data: InvoiceFormData) {
       });
     };
 
-    const drawLine = (x1: number, y1: number, x2: number, y2: number, thickness = 1, color = mediumGray) => {
-      page.drawLine({
-        start: { x: x1, y: height - y1 },
-        end: { x: x2, y: height - y2 },
-        thickness,
-        color,
-      });
-    };
+    let currentY = 60;
 
-    // Draw header background
-    drawRect(0, 0, width, 120, primaryColor);
-
-    // Draw a simple horizontal accent bar (replacing the rotated rectangle)
-    drawRect(width - 200, 60, 200, 30, accentColor);
-
-    // Draw invoice title
-    drawText("INVOICE", width / 2, 50, {
-      size: 36,
-      font: "helvetica-bold",
-      color: rgb(1, 1, 1),
-      align: "center",
+    // 1. HEADER SECTION - Logo and Invoice Number
+    drawText("YOUR", margin, currentY, {
+      size: 14,
+      font: "bold",
+      color: black,
+    });
+    drawText("LOGO", margin, currentY + 18, {
+      size: 14,
+      font: "bold",
+      color: black,
     });
 
-    drawText(format(data.date, "MMMM dd, yyyy"), width / 2, 90, {
+    // Format invoice number to match image (NO. 000001)
+    const formattedNumber = data.invoiceNumber.split('-').pop()?.padStart(6, '0') || '000001';
+    drawText(`NO. ${formattedNumber}`, width - margin, currentY + 9, {
+      size: 14,
+      font: "normal",
+      color: black,
+      align: "right",
+    });
+
+    // 2. LARGE INVOICE TITLE
+    currentY = 160;
+    drawText("INVOICE", margin, currentY, {
+      size: 64,
+      font: "bold",
+      color: black,
+    });
+
+    // 3. DATE
+    currentY = 240;
+    drawText(`Date: ${format(data.date, "dd MMMM, yyyy")}`, margin, currentY, {
       size: 12,
-      font: "helvetica",
-      color: rgb(1, 1, 1),
-      align: "center",
+      font: "bold",
+      color: black,
     });
 
-    // Draw invoice number in circular badge
-    const badgeRadius = 40;
-    const badgeX = 80;
-    const badgeY = 180;
+    // 4. BILLING INFORMATION
+    currentY = 290;
+    const leftColWidth = 200;
+    const rightColX = width - margin - leftColWidth;
 
-    page.drawCircle({
-      x: badgeX,
-      y: height - badgeY,
-      size: badgeRadius * 2, // Diameter = radius * 2
-      color: accentColor,
-    });
-
-    page.drawCircle({
-      x: badgeX,
-      y: height - badgeY,
-      size: (badgeRadius - 3) * 2, // Diameter = radius * 2
-      color: rgb(1, 1, 1),
-    });
-
-    drawText("#", badgeX, badgeY - 15, {
+    // Billed to (left side)
+    drawText("Billed to:", margin, currentY, {
       size: 12,
-      font: "helvetica",
-      color: rgb(1, 1, 1),
-      align: "center",
+      font: "bold",
+      color: black,
     });
 
-    drawText(data.invoiceNumber.replace("INV-", ""), badgeX, badgeY + 5, {
+    let billedToY = currentY + 25;
+    
+    // Client Name (bold)
+    drawText(data.clientName || "Studio Shodwe", margin, billedToY, {
       size: 11,
-      font: "helvetica-bold",
-      color: rgb(1, 1, 1),
-      align: "center",
-      maxWidth: 60,
+      font: "bold",
+      color: black,
+      maxWidth: leftColWidth,
     });
+    billedToY += 20;
 
-    // Draw company info section
-    const companyX = 160;
-    const companyY = 150;
-
-    drawText("FROM", companyX  + 5, companyY, {
-      size: 10,
-      font: "helvetica",
-      color: mediumGray,
-    });
-
-    drawText("Your Company Name", companyX  + 30, companyY + 20, {
-      size: 18,
-      font: "helvetica-bold",
-      color: primaryColor,
-    });
-
-    drawText("123 Business Street", companyX  + 10, companyY + 40, {
-      size: 10,
-      font: "helvetica",
-    });
-
-    drawText("City, State 12345", companyX  + 10, companyY + 55, {
-      size: 10,
-      font: "helvetica",
-    });
-
-    drawText("yourcompany@example.com", companyX  + 10, companyY + 70, {
-      size: 10,
-      font: "helvetica",
-    });
-
-    // Draw client info section
-    const clientX = 160;
-    const clientY = 240;
-
-    drawRect(clientX - 10, clientY - 15, 300, 100, lightGray);
-
-    drawText("BILL TO", clientX + 5, clientY, {
-      size: 10,
-      font: "helvetica",
-      color: mediumGray,
-    });
-
-    drawText(data.clientName, clientX  + 30, clientY + 20, {
-      size: 18,
-      font: "helvetica-bold",
-      color: primaryColor,
-    });
-
-    drawText("Client Address Line 1", clientX  + 10, clientY + 40, {
-      size: 10,
-      font: "helvetica",
-    });
-
-    drawText("Client Address Line 2", clientX  + 10, clientY + 55, {
-      size: 10,
-      font: "helvetica",
-    });
-
-    drawText("client@example.com", clientX  + 10, clientY + 70, {
-      size: 10,
-      font: "helvetica",
-    });
-
-    // Draw items table header
-    const tableX = 50;
-    let tableY = 360;
-    const col1 = tableX;
-    const col2 = tableX + 280;
-    const col3 = tableX + 380;
-    const col4 = tableX + 480;
-    const tableWidth = col4 + 50 - tableX;
-
-    // Table header background
-    drawRect(tableX, tableY, tableWidth, 30, primaryColor);
-
-    // Table header text
-    drawText("DESCRIPTION", col1 + 10, tableY + 20, {
-      size: 12,
-      font: "helvetica-bold",
-      color: rgb(1, 1, 1),
-    });
-
-    drawText("QTY", col2, tableY + 20, {
-      size: 12,
-      font: "helvetica-bold",
-      color: rgb(1, 1, 1),
-      align: "right",
-    });
-
-    drawText("PRICE", col3, tableY + 20, {
-      size: 12,
-      font: "helvetica-bold",
-      color: rgb(1, 1, 1),
-      align: "right",
-    });
-
-    drawText("AMOUNT", col4, tableY + 20, {
-      size: 12,
-      font: "helvetica-bold",
-      color: rgb(1, 1, 1),
-      align: "right",
-    });
-
-    // Table rows
-    tableY += 30;
-    let itemCount = 0;
-
-    for (const item of data.items) {
-      itemCount++;
-      const rowColor = itemCount % 2 === 0 ? lightGray : rgb(1, 1, 1);
-
-      // Draw row background
-      drawRect(tableX, tableY, tableWidth, 30, rowColor);
-
-      // Draw row content
-      drawText(item.description, col1 + 10, tableY + 20, {
-        size: 10,
-        maxWidth: 260,
-      });
-
-      drawText(item.quantity.toString(), col2, tableY + 20, {
-        size: 10,
-        align: "right",
-      });
-
-      drawText(`$${item.price.toFixed(2)}`, col3, tableY + 20, {
-        size: 10,
-        align: "right",
-      });
-
-      drawText(`$${(item.quantity * item.price).toFixed(2)}`, col4, tableY + 20, {
-        size: 10,
-        font: "helvetica-bold",
-        align: "right",
-      });
-
-      tableY += 30;
+    // Client Address (if provided)
+    if (data.clientAddress && data.clientAddress.trim()) {
+      const addressLines = data.clientAddress.split('\n');
+      for (const line of addressLines) {
+        if (line.trim()) {
+          drawText(line.trim(), margin, billedToY, {
+            size: 10,
+            font: "normal",
+            color: black,
+            maxWidth: leftColWidth,
+          });
+          billedToY += 15;
+        }
+      }
     }
 
-    // Calculate totals
-    const subtotal = data.items.reduce((sum, item) => sum + (item.quantity * item.price), 0);
-    const taxRate = 0.1; // 10% tax
-    const tax = subtotal * taxRate;
-    const total = subtotal + tax;
+    // Client Email (if provided)
+    if (data.clientEmail && data.clientEmail.trim()) {
+      drawText(data.clientEmail, margin, billedToY, {
+        size: 10,
+        font: "normal",
+        color: black,
+        maxWidth: leftColWidth,
+      });
+      billedToY += 15;
+    }
 
-    // Draw table footer for totals
-    tableY += 10;
-
-    // Subtotal
-    drawText("Subtotal:", col3 - 70, tableY, {
-      size: 10,
-      font: "helvetica-bold",
-      align: "right",
-    });
-
-    drawText(`$${subtotal.toFixed(2)}`, col4, tableY, {
-      size: 10,
-      align: "right",
-    });
-
-    // Tax
-    tableY += 20;
-    drawText(`Tax (${(taxRate * 100).toFixed(0)}%):`, col3 - 70, tableY, {
-      size: 10,
-      font: "helvetica-bold",
-      align: "right",
-    });
-
-    drawText(`$${tax.toFixed(2)}`, col4, tableY, {
-      size: 10,
-      align: "right",
-    });
-
-    // Total
-    tableY += 30;
-    drawRect(col3 - 80, tableY - 10, col4 + 50 - (col3 - 80), 40, primaryColor);
-
-    drawText("TOTAL:", col3 - 25, tableY + 10, {
-      size: 14,
-      font: "helvetica-bold",
-      color: rgb(1, 1, 1),
-      align: "right",
-    });
-
-    drawText(`$${total.toFixed(2)}`, col4, tableY + 10, {
-      size: 14,
-      font: "helvetica-bold",
-      color: rgb(1, 1, 1),
-      align: "right",
-    });
-
-    // Draw footer
-    const footerY = height - 50;
-    drawLine(tableX, footerY - 20, width - tableX, footerY - 20, 1, mediumGray);
-
-    drawText("Thank you for your business", width / 2, height - 30, {
+    // From (right side)
+    drawText("From:", rightColX, currentY, {
       size: 12,
-      font: "times-italic",
-      color: primaryColor,
+      font: "bold",
+      color: black,
+    });
+
+    let fromY = currentY + 25;
+    
+    // From Name (bold)
+    drawText(data.fromName || "Olivia Wilson", rightColX, fromY, {
+      size: 11,
+      font: "bold",
+      color: black,
+      maxWidth: leftColWidth,
+    });
+    fromY += 20;
+
+    // From Address (if provided)
+    if (data.fromAddress && data.fromAddress.trim()) {
+      const addressLines = data.fromAddress.split('\n');
+      for (const line of addressLines) {
+        if (line.trim()) {
+          drawText(line.trim(), rightColX, fromY, {
+            size: 10,
+            font: "normal",
+            color: black,
+            maxWidth: leftColWidth,
+          });
+          fromY += 15;
+        }
+      }
+    }
+
+    // From Email (if provided)
+    if (data.fromEmail && data.fromEmail.trim()) {
+      drawText(data.fromEmail, rightColX, fromY, {
+        size: 10,
+        font: "normal",
+        color: black,
+        maxWidth: leftColWidth,
+      });
+      fromY += 15;
+    }
+
+    // 5. ITEMS TABLE
+    currentY = Math.max(billedToY, fromY) + 60;
+
+    // Table header with light gray background
+    const tableHeaderHeight = 40;
+    drawRect(margin, currentY, contentWidth, tableHeaderHeight, lightGray);
+
+    // Column positions (matching the image layout)
+    const itemCol = margin + 15;
+    const qtyCol = margin + 320;
+    const priceCol = margin + 400;
+    const amountCol = margin + contentWidth - 15;
+
+    // Table headers
+    drawText("Item", itemCol, currentY + 25, {
+      size: 12,
+      font: "bold",
+      color: black,
+    });
+
+    drawText("Quantity", qtyCol, currentY + 25, {
+      size: 12,
+      font: "bold",
+      color: black,
       align: "center",
     });
 
-    drawText("Payment due within 30 days", width / 2, height - 45, {
-      size: 10,
-      font: "helvetica",
-      color: mediumGray,
+    drawText("Price", priceCol, currentY + 25, {
+      size: 12,
+      font: "bold",
+      color: black,
       align: "center",
     });
 
-    // Draw page number
-    drawText("Page 1 of 1", width - 50, height - 30, {
-      size: 8,
-      font: "helvetica",
-      color: mediumGray,
+    drawText("Amount", amountCol, currentY + 25, {
+      size: 12,
+      font: "bold",
+      color: black,
       align: "right",
     });
 
-    // Generate PDF bytes and trigger download
+    currentY += tableHeaderHeight;
+
+    // Table rows
+    const rowHeight = 35;
+    data.items.forEach((item, index) => {
+      // Alternate row background for better readability
+      if (index % 2 === 0) {
+        drawRect(margin, currentY, contentWidth, rowHeight, rgb(0.99, 0.99, 0.99));
+      }
+
+      drawText(item.description || "Item description", itemCol, currentY + 22, {
+        size: 11,
+        font: "normal",
+        color: black,
+        maxWidth: 280,
+      });
+
+      drawText(item.quantity.toString(), qtyCol, currentY + 22, {
+        size: 11,
+        font: "normal",
+        color: black,
+        align: "center",
+      });
+
+      drawText(`${item.price.toFixed(0)}`, priceCol, currentY + 22, {
+        size: 11,
+        font: "normal",
+        color: black,
+        align: "center",
+      });
+
+      drawText(`${(item.quantity * item.price).toFixed(0)}`, amountCol, currentY + 22, {
+        size: 11,
+        font: "normal",
+        color: black,
+        align: "right",
+      });
+
+      currentY += rowHeight;
+    });
+
+    // Table border
+    page.drawLine({
+      start: { x: margin, y: height - (currentY - (data.items.length * rowHeight) - tableHeaderHeight) },
+      end: { x: margin + contentWidth, y: height - (currentY - (data.items.length * rowHeight) - tableHeaderHeight) },
+      thickness: 1,
+      color: mediumGray,
+    });
+
+    page.drawLine({
+      start: { x: margin, y: height - currentY },
+      end: { x: margin + contentWidth, y: height - currentY },
+      thickness: 1,
+      color: mediumGray,
+    });
+
+    // 6. TOTAL SECTION (matching the image layout)
+    currentY += 40;
+    const totalBoxWidth = 150;
+    const totalBoxX = margin + contentWidth - totalBoxWidth;
+
+    drawText("Total", totalBoxX, currentY, {
+      size: 14,
+      font: "bold",
+      color: black,
+    });
+
+    const total = data.items.reduce((sum, item) => sum + (item.quantity * item.price), 0);
+    drawText(`${total.toFixed(0)}`, amountCol, currentY, {
+      size: 14,
+      font: "bold",
+      color: black,
+      align: "right",
+    });
+
+    // 7. PAYMENT INFO
+    currentY += 80;
+
+    drawText("Payment method: Cash", margin, currentY, {
+      size: 11,
+      font: "bold",
+      color: black,
+    });
+
+    drawText("Note: Thank you for choosing us!", margin, currentY + 25, {
+      size: 11,
+      font: "bold",
+      color: black,
+    });
+
+    // 8. DECORATIVE FOOTER WAVES (matching the image style)
+    const waveStartY = height - 180;
+    
+    // Create smooth wave curves
+    const wavePoints1: Array<{x: number, y: number}> = [];
+    const wavePoints2: Array<{x: number, y: number}> = [];
+    
+    for (let x = 0; x <= width; x += 5) {
+      const progress = x / width;
+      
+      // First wave (lighter gray)
+      const wave1Y = waveStartY + Math.sin(progress * Math.PI * 3) * 30 + 20;
+      wavePoints1.push({ x, y: wave1Y });
+      
+      // Second wave (darker gray)
+      const wave2Y = waveStartY + Math.sin(progress * Math.PI * 2 + 0.5) * 40 + 60;
+      wavePoints2.push({ x, y: wave2Y });
+    }
+
+    // Draw the waves using multiple line segments for smooth curves
+    // Light gray wave
+    for (let i = 0; i < wavePoints1.length - 1; i++) {
+      const start = wavePoints1[i];
+      const end = wavePoints1[i + 1];
+      
+      page.drawLine({
+        start: { x: start.x, y: start.y },
+        end: { x: end.x, y: end.y },
+        thickness: 3,
+        color: rgb(0.85, 0.85, 0.85),
+      });
+    }
+
+    // Fill area below light wave
+    for (let x = 0; x < width; x += 10) {
+      const progress = x / width;
+      const waveY = waveStartY + Math.sin(progress * Math.PI * 3) * 30 + 20;
+      drawRect(x, waveY, 10, height - waveY, rgb(0.85, 0.85, 0.85));
+    }
+
+    // Dark gray wave
+    for (let i = 0; i < wavePoints2.length - 1; i++) {
+      const start = wavePoints2[i];
+      const end = wavePoints2[i + 1];
+      
+      page.drawLine({
+        start: { x: start.x, y: start.y },
+        end: { x: end.x, y: end.y },
+        thickness: 4,
+        color: darkGray,
+      });
+    }
+
+    // Fill area below dark wave
+    for (let x = 0; x < width; x += 10) {
+      const progress = x / width;
+      const waveY = waveStartY + Math.sin(progress * Math.PI * 2 + 0.5) * 40 + 60;
+      drawRect(x, waveY, 10, height - waveY, darkGray);
+    }
+
+    // Generate and download PDF
     const pdfBytes = await pdfDoc.save();
     const blob = new Blob([pdfBytes], { type: "application/pdf" });
     const url = window.URL.createObjectURL(blob);

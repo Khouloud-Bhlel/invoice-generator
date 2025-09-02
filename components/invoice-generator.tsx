@@ -15,6 +15,9 @@ import {
   FileText,
   User,
   ClipboardList,
+  MapPin,
+  Mail,
+  Building,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
@@ -27,6 +30,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -54,6 +58,11 @@ export default function InvoiceGenerator() {
     resolver: zodResolver(InvoiceFormSchema),
     defaultValues: {
       clientName: "",
+      clientAddress: "",
+      clientEmail: "",
+      fromName: "",
+      fromAddress: "",
+      fromEmail: "",
       invoiceNumber: `INV-${format(new Date(), "yyyyMMdd")}-001`,
       date: new Date(),
       items: [{ description: "", quantity: 1, price: 0 }],
@@ -68,7 +77,7 @@ export default function InvoiceGenerator() {
   const onSubmit = async (data: InvoiceFormData) => {
     try {
       setIsGenerating(true);
-      setError(null); // Clear any previous errors
+      setError(null);
       await generatePDF(data);
     } catch (error) {
       console.error("Failed to generate PDF:", error);
@@ -82,10 +91,6 @@ export default function InvoiceGenerator() {
     (sum, item) => sum + (item.quantity || 0) * (item.price || 0),
     0
   );
-
-  const subtotal = total;
-  const tax = total * 0.1; // 10% tax rate example
-  const grandTotal = subtotal + tax;
 
   return (
     <div className="container mx-auto py-8 px-4">
@@ -117,8 +122,62 @@ export default function InvoiceGenerator() {
           <CardContent className="pt-6">
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                {/* Basic Invoice Info */}
                 <div className="grid gap-6 md:grid-cols-2">
+                  <FormField
+                    control={form.control}
+                    name="invoiceNumber"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="flex items-center gap-2">
+                          <Hash className="h-4 w-4" />
+                          Invoice Number
+                        </FormLabel>
+                        <FormControl>
+                          <Input
+                            {...field}
+                            className="border-primary/20 focus:border-primary"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="date"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="flex items-center gap-2">
+                          <Calendar className="h-4 w-4" />
+                          Invoice Date
+                        </FormLabel>
+                        <FormControl>
+                          <Input
+                            type="date"
+                            value={format(field.value, "yyyy-MM-dd")}
+                            onChange={(e) => field.onChange(new Date(e.target.value))}
+                            className="border-primary/20 focus:border-primary"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <Separator />
+
+                {/* Billing Information */}
+                <div className="grid gap-6 md:grid-cols-2">
+                  {/* Billed To Section */}
                   <div className="space-y-4">
+                    <h3 className="text-lg font-semibold flex items-center gap-2 text-primary">
+                      <Building className="h-5 w-5" />
+                      Billed To
+                    </h3>
+                    
                     <FormField
                       control={form.control}
                       name="clientName"
@@ -139,23 +198,116 @@ export default function InvoiceGenerator() {
                         </FormItem>
                       )}
                     />
-                  </div>
 
-                  <div className="space-y-4">
                     <FormField
                       control={form.control}
-                      name="date"
+                      name="clientAddress"
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel className="flex items-center gap-2">
-                            <Calendar className="h-4 w-4" />
-                            Invoice Date
+                            <MapPin className="h-4 w-4" />
+                            Address
+                          </FormLabel>
+                          <FormControl>
+                            <Textarea
+                              {...field}
+                              placeholder="123 Anywhere St., Any City"
+                              className="border-primary/20 focus:border-primary min-h-[80px]"
+                              rows={3}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="clientEmail"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="flex items-center gap-2">
+                            <Mail className="h-4 w-4" />
+                            Email
                           </FormLabel>
                           <FormControl>
                             <Input
-                              type="date"
-                              value={format(field.value, "yyyy-MM-dd")}
-                              onChange={(e) => field.onChange(new Date(e.target.value))}
+                              {...field}
+                              type="email"
+                              placeholder="client@email.com"
+                              className="border-primary/20 focus:border-primary"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  {/* From Section */}
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold flex items-center gap-2 text-primary">
+                      <User className="h-5 w-5" />
+                      From
+                    </h3>
+                    
+                    <FormField
+                      control={form.control}
+                      name="fromName"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="flex items-center gap-2">
+                            <User className="h-4 w-4" />
+                            Your Name
+                          </FormLabel>
+                          <FormControl>
+                            <Input
+                              {...field}
+                              placeholder="Enter your name"
+                              className="border-primary/20 focus:border-primary"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="fromAddress"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="flex items-center gap-2">
+                            <MapPin className="h-4 w-4" />
+                            Your Address
+                          </FormLabel>
+                          <FormControl>
+                            <Textarea
+                              {...field}
+                              placeholder="123 Anywhere St., Any City"
+                              className="border-primary/20 focus:border-primary min-h-[80px]"
+                              rows={3}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="fromEmail"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="flex items-center gap-2">
+                            <Mail className="h-4 w-4" />
+                            Your Email
+                          </FormLabel>
+                          <FormControl>
+                            <Input
+                              {...field}
+                              type="email"
+                              placeholder="your@email.com"
                               className="border-primary/20 focus:border-primary"
                             />
                           </FormControl>
@@ -166,28 +318,9 @@ export default function InvoiceGenerator() {
                   </div>
                 </div>
 
-                <FormField
-                  control={form.control}
-                  name="invoiceNumber"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="flex items-center gap-2">
-                        <Hash className="h-4 w-4" />
-                        Invoice Number
-                      </FormLabel>
-                      <FormControl>
-                        <Input
-                          {...field}
-                          className="border-primary/20 focus:border-primary"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
                 <Separator />
 
+                {/* Invoice Items */}
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <h3 className="text-lg font-semibold flex items-center gap-2">
@@ -352,11 +485,33 @@ export default function InvoiceGenerator() {
           </CardHeader>
           <CardContent className="p-6">
             <div className="space-y-6">
-              <div className="border-l-4 border-primary pl-4 py-1">
-                <h3 className="text-sm font-medium text-muted-foreground">Client</h3>
-                <p className="text-xl font-semibold">
-                  {form.watch("clientName") || "Client Name"}
-                </p>
+              {/* Billing Addresses */}
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="border-l-4 border-primary pl-4 py-1">
+                  <h3 className="text-sm font-medium text-muted-foreground">Billed to:</h3>
+                  <p className="text-lg font-semibold">
+                    {form.watch("clientName") || "Client Name"}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    {form.watch("clientAddress") || "123 Anywhere St., Any City"}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    {form.watch("clientEmail") || "client@email.com"}
+                  </p>
+                </div>
+
+                <div className="border-l-4 border-secondary pl-4 py-1">
+                  <h3 className="text-sm font-medium text-muted-foreground">From:</h3>
+                  <p className="text-lg font-semibold">
+                    {form.watch("fromName") || "Your Name"}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    {form.watch("fromAddress") || "123 Anywhere St., Any City"}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    {form.watch("fromEmail") || "your@email.com"}
+                  </p>
+                </div>
               </div>
 
               <div className="grid gap-4 sm:grid-cols-2">
@@ -415,18 +570,10 @@ export default function InvoiceGenerator() {
 
               <div className="flex justify-end">
                 <div className="w-48 space-y-2">
-                  <div className="flex justify-between py-1">
-                    <span className="text-muted-foreground">Subtotal:</span>
-                    <span>${subtotal.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between py-1">
-                    <span className="text-muted-foreground">Tax (10%):</span>
-                    <span>${tax.toFixed(2)}</span>
-                  </div>
                   <Separator />
                   <div className="flex justify-between py-1">
                     <span className="font-medium">Total:</span>
-                    <span className="font-bold text-primary">${grandTotal.toFixed(2)}</span>
+                    <span className="font-bold text-primary">${total.toFixed(2)}</span>
                   </div>
                 </div>
               </div>
