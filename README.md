@@ -4,6 +4,30 @@ A modern React component library for generating professional invoices with PDF e
 
 ## 🚀 Installation
 
+### From GitHub Packages
+
+First, configure npm to use GitHub Packages for this scoped package:
+
+```bash
+npm config set @khouloud-bhlel:registry https://npm.pkg.github.com/
+```
+
+Then install the package:
+
+```bash
+npm install @khouloud-bhlel/invoice-generator
+```
+
+### Alternative: Using .npmrc
+
+Create a `.npmrc` file in your project root with:
+
+```
+@khouloud-bhlel:registry=https://npm.pkg.github.com/
+```
+
+Then install:
+
 ```bash
 npm install @khouloud-bhlel/invoice-generator
 ```

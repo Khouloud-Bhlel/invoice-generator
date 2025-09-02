@@ -52,6 +52,10 @@ Your Next.js invoice generator has been successfully converted into a reusable n
 
 ### Install the package:
 ```bash
+# First configure npm for GitHub Packages
+npm config set @khouloud-bhlel:registry https://npm.pkg.github.com/
+
+# Then install
 npm install @khouloud-bhlel/invoice-generator
 ```
 
@@ -115,15 +119,20 @@ function MyApp() {
    ```
 
 ### For Publishing:
-1. **Create an npm account** (if you don't have one)
-2. **Login to npm**:
+1. **Create a GitHub Personal Access Token** with `packages:write` permission
+2. **Login to npm with GitHub**:
    ```bash
-   npm login
+   npm login --scope=@khouloud-bhlel --auth-type=legacy --registry=https://npm.pkg.github.com
    ```
 3. **Publish the package**:
    ```bash
-   npm publish --access public
+   npm publish
    ```
+
+### For Automated Publishing:
+- **Create a GitHub Release** with version tag (e.g., `v1.0.0`)
+- **Or push version tags**: `git push origin main --tags`
+- GitHub Actions will automatically publish to GitHub Packages
 
 ### For Maintenance:
 - Update version in `package.json` for new releases
@@ -134,4 +143,11 @@ function MyApp() {
 
 Your invoice generator is now a professional, reusable npm package that others can install and use in their React applications. The original PDF generation issue has been fixed, and the component is now much more flexible and maintainable!
 
-**Package ready for:** `npm install @khouloud-bhlel/invoice-generator`
+**Package ready for:** `GitHub Packages - @khouloud-bhlel/invoice-generator`
+
+### 📦 GitHub Packages Benefits:
+- ✅ **Integrated with GitHub** - Package lives alongside your code
+- ✅ **Access Control** - Use GitHub's permission system
+- ✅ **Free for Public Repos** - No additional cost for open source
+- ✅ **Automated Publishing** - GitHub Actions integration included
+- ✅ **Version Management** - Tied to Git tags and releases
